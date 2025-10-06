@@ -5,96 +5,245 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Nils & Chris – Grand Cru Classé Tasting (Standalone)</title>
 <style>
- :root{
-  --bg:#fafafa; --txt:#111; --muted:#6b7280; --ring:#e5e7eb;
-  --card:#ffffff; --card-green:#ecfdf5; --ring-green:#a7f3d0;
-  --rose-bg:#fff1f2; --rose:#9f1239; --amber:#b45309; --emerald:#065f46;
-}
+  :root{
+    --bg:#fafafa;
+    --txt:#111;
+    --muted:#6b7280;
+    --ring:#e5e7eb;
+    --card:#ffffff;
+    --card-green:#ecfdf5;
+    --ring-green:#a7f3d0;
+    --rose-bg:#fff1f2;
+    --rose:#9f1239;
+    --amber:#b45309;
+    --emerald:#065f46;
+  }
 
-*{ box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"; }
+  *{
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+  }
 
-body{
-  margin:0; background:var(--bg); color:var(--txt);
-  -webkit-text-size-adjust:100%;
-}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--txt);
+  }
 
-/* Header */
-header{ background:linear-gradient(#f4f4f5, #fff1f2 35%, #fafafa); }
-h1{ margin:0; font-weight:700; line-height:1.15; }
+  .container{
+    max-width:1120px;
+    margin:0 auto;
+    padding:24px;
+  }
 
-/* ⚡ mobile: kleinere Schriftgrößen, kompakter Header */
-.container{ max-width:1120px; margin:0 auto; padding:16px; }
-header .container{ text-align:center; padding:24px 12px; }
-h1{ font-size:28px; }
-@media (min-width:480px){ h1{ font-size:32px; } }
-@media (min-width:768px){ h1{ font-size:36px; } }
+  header{
+    background:linear-gradient(#fdf2f8, #fff1f2 35%, #fafafa);
+  }
 
-.muted{ color:var(--muted); }
-.small{ font-size:12px; }
+  h1{
+    margin:0;
+    font-weight:700;
+    line-height:1.2;
+  }
 
-/* Progress */
-.progress{ height:8px; background:#eee; border-radius:999px; overflow:hidden }
-.progress>div{ height:100%; background:#111; transform-origin:left }
+  .muted{ color:var(--muted); }
 
-/* Controls */
-.controls{
-  display:grid; grid-template-columns:1fr; gap:10px; margin:20px 0;
-}
-.input,.select{
-  width:100%; padding:12px; border:1px solid var(--ring); border-radius:12px; background:#fff;
-  font-size:16px;
-}
-.switch{
-  display:flex; align-items:center; gap:8px; padding:10px 12px;
-  border:1px solid var(--ring); border-radius:12px; background:#fff; font-size:16px;
-}
+  .progress{
+    height:8px;
+    background:#eee;
+    border-radius:999px;
+    overflow:hidden;
+  }
 
-/* Grid */
-.grid{ display:grid; grid-template-columns:1fr; gap:16px; }
-@media (min-width:700px){
-  .grid{ grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); }
-  .controls{ grid-template-columns:1fr 220px 200px; }
-}
+  .progress>div{
+    height:100%;
+    background:#111;
+    transform-origin:left;
+  }
 
-/* Cards */
-.card{
-  border:1px solid var(--ring); border-radius:16px; padding:14px; background:var(--card);
-  transition:.15s box-shadow,.15s transform;
-}
-.card:hover{ box-shadow:0 4px 18px rgba(0,0,0,.06); transform:translateY(-1px) }
-.card.tasted{ background:var(--card-green); border-color:var(--ring-green) }
+  .controls{
+    display:grid;
+    grid-template-columns:1fr 240px 220px;
+    gap:12px;
+    margin:20px 0;
+  }
 
-.title{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px }
-.title h3{ margin:6px 0 2px 0; font-size:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0 }
-.badge{ white-space:nowrap; flex-shrink:0; background:var(--rose-bg); color:var(--rose); border:1px solid #fecdd3; border-radius:999px; padding:2px 8px; font-size:12px }
+  .input, .select{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--ring);
+    border-radius:12px;
+    background:#fff;
+    font-size:16px;
+    height:44px;
+  }
 
-/* Zeilen in der Karte */
-.row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px }
-.row label{ align-self:center; font-size:14px }
-.score{ display:flex; align-items:center; gap:8px }
-.score input{ width:100%; padding:10px; border:1px solid var(--ring); border-radius:10px; font-size:16px }
+  .switch{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 12px;
+    border:1px solid var(--ring);
+    border-radius:12px;
+    background:#fff;
+    font-size:16px;
+    height:44px;
+  }
 
-/* ⚡ iOS-Fix: Date-Input sprengt nicht mehr die Spalte */
-input[type="date"]{ min-width:0; width:100%; }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+    gap:16px;
+  }
 
-/* ⚡ sehr kleine Screens: Label über Input (1 Spalte) */
-@media (max-width:420px){
-  .row{ grid-template-columns:1fr; }
-  .row label{ margin-bottom:2px; }
-}
+  .card{
+    border:1px solid var(--ring);
+    border-radius:16px;
+    padding:14px;
+    background:var(--card);
+    transition:.15s box-shadow,.15s transform;
+    min-height:240px;
+  }
 
-/* Status-Zeile */
-.status{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; font-size:14px; gap:8px; flex-wrap:wrap }
-.green{ color:var(--emerald); font-weight:500 }
-.amber{ color:var(--amber); font-weight:600 }
+  .card:hover{
+    box-shadow:0 4px 18px rgba(0,0,0,.06);
+    transform:translateY(-1px);
+  }
 
-/* Footer */
-.footer-quote{ margin-top:32px; padding:20px; border:1px solid var(--ring); border-radius:16px; background:#fff; font-size:15px; text-align:center }
+  .card.tasted{
+    background:var(--card-green);
+    border-color:var(--ring-green);
+  }
 
-/* ⚡ Touch-Hilfen */
-input,select,button{ -webkit-tap-highlight-color: transparent; }
+  .title{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+  }
 
+  .title h3{
+    margin:6px 0 2px 0;
+    font-size:20px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    flex:1;
+    min-width:0;
+  }
+
+  .badge{
+    white-space:nowrap;
+    flex-shrink:0;
+    background:var(--rose-bg);
+    color:var(--rose);
+    border:1px solid #fecdd3;
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:12px;
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:8px;
+  }
+
+  .row label{
+    align-self:center;
+    font-size:14px;
+  }
+
+  .score{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .score input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--ring);
+    border-radius:10px;
+    font-size:16px;
+    height:44px;
+  }
+
+  .status{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:8px;
+    font-size:14px;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .green{ color:var(--emerald); font-weight:500; }
+  .amber{ color:var(--amber); font-weight:600; }
+
+  .footer-quote{
+    margin-top:28px;
+    padding:20px;
+    border:1px solid var(--ring);
+    border-radius:16px;
+    background:#fff;
+    text-align:center;
+  }
+
+  .small{ font-size:12px; }
+
+  /* ===== Mobile Tuning ===== */
+
+  header .container{
+    text-align:center;
+    padding:16px 10px;
+  }
+
+  @media (max-width:640px){
+    h1{ font-size:22px; }
+    header .muted{ font-size:14px; }
+  }
+
+  @media (max-width:900px){
+    .controls{ grid-template-columns:1fr; }
+  }
+
+  /* Karten auf kleinen Screens einspaltig */
+  @media (max-width:700px){
+    .grid{ grid-template-columns:1fr; }
+  }
+
+  /* Rows untereinander auf Phones */
+  @media (max-width:640px){
+    .row{ grid-template-columns:1fr; }
+    .row label{ margin-bottom:4px; }
+    .title h3{ font-size:18px; }
+  }
+
+  /* iOS Date Input Fix */
+  input[type="date"]{
+    width:100%;
+    min-width:0;
+    height:44px;
+    padding:10px 12px;
+    border:1px solid var(--ring);
+    border-radius:10px;
+    background:#fff;
+    font-size:16px;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="date"]::-webkit-date-and-time-value{
+    min-height:auto;
+  }
+
+  .progress{ height:8px; }
 </style>
+
 
 </head>
 <body>
@@ -388,5 +537,6 @@ input,select,button{ -webkit-tap-highlight-color: transparent; }
 </script>
 </body>
 </html>
+
 
 
