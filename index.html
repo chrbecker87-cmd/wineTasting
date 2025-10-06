@@ -188,21 +188,29 @@
     { château:"Château Cos Labory", klassifikation:"5e Cru", herkunftsgebiet:"Saint-Estèphe", rebsorten:"55% Cabernet Sauvignon, 35% Merlot, 10% Cabernet Franc", verkostetAm:"", scoreNils:"", scoreChris:"" },
   ].map((w,i)=>({ ...w, _order:i }));
 
-  // Firestore IO (mit Fallback)
-  async function loadWineData() {
-    try {
-      const snap = await getDocs(collection(db, "weine"));
-      const arr = []; snap.forEach(d => arr.push(d.data()));
-      return arr.length ? arr.map((w,i)=>({ _order:i, ...w })) : FULL_DATA;
-    } catch (e) {
-      console.warn("Firestore-Load fehlgeschlagen – nutze lokale FULL_DATA.", e);
-      return FULL_DATA;
-    }
+// Firestore IO mit Live-Updates
+import { onSnapshot } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+async function saveWineData(wine) {
+  try {
+    await setDoc(doc(db, "weine", wine.château), wine);
+  } catch (e) {
+    console.error("Speicherfehler:", e);
   }
-  async function saveWineData(wine) {
-    try { await setDoc(doc(db, "weine", wine.château), wine); }
-    catch (e) { console.error("Speicherfehler:", e); }
-  }
+}
+
+// Live-Daten abonnieren
+function subscribeToWineData() {
+  const ref = collection(db, "weine");
+  onSnapshot(ref, (snapshot) => {
+    const arr = [];
+    snapshot.forEach(docSnap => arr.push(docSnap.data()));
+    data = arr.length ? arr.map((w,i)=>({ _order:i, ...w })) : FULL_DATA;
+    render();
+  }, (err) => {
+    console.warn("Firestore-Live-Update fehlgeschlagen:", err);
+  });
+}
 
   // DOM Refs
   const elGrid        = document.getElementById("grid");
@@ -314,8 +322,7 @@
   document.getElementById("onlyTasted").addEventListener("change", render);
 
   // Start
-  data = await loadWineData();
-  render();
+subscribeToWineData();
 
 
 
@@ -323,3 +330,4 @@
 
 </body>
 </html>
+
