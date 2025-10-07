@@ -55,7 +55,7 @@
 
 <section class="container">
   <div class="controls">
-    <input id="search" class="input" placeholder="Suche nach Château, Herkunftsgebiet oder Rebsorten…" />
+    <input id="search" class="input" placeholder="Suche nach Château, Herkunftsgebiet, Rebsorten oder Jahrgang…" />
     <select id="klass" class="select">
       <option>Alle</option><option>1er Cru</option><option>2e Cru</option>
       <option>3e Cru</option><option>4e Cru</option><option>5e Cru</option>
@@ -78,7 +78,7 @@
 <script type="module">
   // Firebase
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+  import { getFirestore, collection, setDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDgqvI3nx97gtWO79EMODiHeGuOCVoQ2S0",
@@ -95,15 +95,23 @@
   const hasValidDate = v => v && (/^\d{4}-\d{2}-\d{2}$/.test(v) || /^\d{2}\.\d{2}\.\d{4}$/.test(v));
   const formatDateTTMMJJJJ = v => {
     if (!v) return "";
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
-    if (m) return `${m[3]}.${m[2]}.${m[1]}`;
-    const d = new Date(v); if (isNaN(d)) return "";
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+    if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
+    const de = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(v);
+    if (de) return `${de[1]}.${de[2]}.${de[3]}`;
+    const d = new Date(v);
+    if (isNaN(d)) return "";
     return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`;
   };
   const clampScore = v => {
     if (v==="" || v==null) return "";
     let n = parseInt(v,10); if (isNaN(n)) return "";
     return String(Math.max(0, Math.min(100, n)));
+  };
+  const clampYear = v => {
+    if (v==="" || v==null) return "";
+    let n = parseInt(v,10); if (isNaN(n)) return "";
+    return String(Math.max(1900, Math.min(2100, n)));
   };
   const averageScore = (a,b) => {
     const na = a===""||a==null ? NaN : parseInt(a,10);
@@ -114,8 +122,8 @@
     return String(Math.round((na+nb)/2));
   };
 
-  // Datenbasis (deine komplette Liste)
-  const FULL_DATA = [
+  // Basisdaten (statische Voll-Liste)
+  const BASE_DATA = [
     // 1er (5)
     { château:"Château Lafite Rothschild", klassifikation:"1er Cru", herkunftsgebiet:"Pauillac", rebsorten:"91% Cabernet Sauvignon, 8% Merlot, 1% Petit Verdot", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château Latour", klassifikation:"1er Cru", herkunftsgebiet:"Pauillac", rebsorten:"90% Cabernet Sauvignon, 9% Merlot, 1% Petit Verdot", verkostetAm:"", scoreNils:"", scoreChris:"" },
@@ -124,7 +132,7 @@
     { château:"Château Mouton Rothschild", klassifikation:"1er Cru", herkunftsgebiet:"Pauillac", rebsorten:"80% Cabernet Sauvignon, 16% Merlot, 4% Petit Verdot", verkostetAm:"", scoreNils:"", scoreChris:"" },
 
     // 2e
-    { château:"Château Léoville-Las Cases", klassifikation:"2e Cru", herkunftsgebiet:"Saint-Julien", rebsorten:"80% Cabernet Sauvignon, 11% Cabernet Franc, 9% Merlot", verkostetAm:"19.09.2025", scoreNils:"100", scoreChris:"100" },
+    { château:"Château Léoville-Las Cases", klassifikation:"2e Cru", herkunftsgebiet:"Saint-Julien", rebsorten:"80% Cabernet Sauvignon, 11% Cabernet Franc, 9% Merlot", verkostetAm:"19.09.2025", scoreNils:"100", scoreChris:"" },
     { château:"Château Léoville-Poyferré", klassifikation:"2e Cru", herkunftsgebiet:"Saint-Julien", rebsorten:"65% Cabernet Sauvignon, 25% Merlot, 8% Petit Verdot, 2% Cabernet Franc", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château Léoville-Barton", klassifikation:"2e Cru", herkunftsgebiet:"Saint-Julien", rebsorten:"83% Cabernet Sauvignon, 15% Merlot, 2% Cabernet Franc", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château Gruaud-Larose", klassifikation:"2e Cru", herkunftsgebiet:"Saint-Julien", rebsorten:"60% Cabernet Sauvignon, 30% Merlot, 10% Cabernet Franc", verkostetAm:"", scoreNils:"", scoreChris:"" },
@@ -183,34 +191,45 @@
     { château:"Château Dauzac", klassifikation:"5e Cru", herkunftsgebiet:"Margaux", rebsorten:"60% Cabernet Sauvignon, 40% Merlot", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château du Tertre", klassifikation:"5e Cru", herkunftsgebiet:"Margaux", rebsorten:"43% Cabernet Sauvignon, 33% Merlot, 19% Cabernet Franc, 5% Petit Verdot", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château Belgrave", klassifikation:"5e Cru", herkunftsgebiet:"Haut-Médoc", rebsorten:"50% Cabernet Sauvignon, 40% Merlot, 10% Petit Verdot", verkostetAm:"", scoreNils:"", scoreChris:"" },
-    { château:"Château Camensac", klassifikation:"5e Cru", herkunftsgebiet:"Haut-Médoc", rebsorten:"60% Cabernet Sauvignon, 40% Merlot", verkostetAm:"", scoreNils:"", scoreChris:"" },
+    { château:"Château Camensac", klassifikation:"Haut-Médoc", herkunftsgebiet:"Haut-Médoc", rebsorten:"60% Cabernet Sauvignon, 40% Merlot", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château Cantemerle", klassifikation:"5e Cru", herkunftsgebiet:"Haut-Médoc", rebsorten:"60% Cabernet Sauvignon, 30% Merlot, 10% Cabernet Franc/Petit Verdot", verkostetAm:"", scoreNils:"", scoreChris:"" },
     { château:"Château Cos Labory", klassifikation:"5e Cru", herkunftsgebiet:"Saint-Estèphe", rebsorten:"55% Cabernet Sauvignon, 35% Merlot, 10% Cabernet Franc", verkostetAm:"", scoreNils:"", scoreChris:"" },
-  ].map((w,i)=>({ ...w, _order:i }));
+  ].map((w,i)=>({ ...w, jahrgang: w.jahrgang ?? "", _order:i }));
 
-// Firestore IO mit Live-Updates
-import { onSnapshot } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-
-async function saveWineData(wine) {
-  try {
-    await setDoc(doc(db, "weine", wine.château), wine);
-  } catch (e) {
-    console.error("Speicherfehler:", e);
+  // Firestore IO (mit merge)
+  async function saveWineData(wine) {
+    try {
+      await setDoc(doc(db, "weine", wine.château), wine, { merge: true });
+    } catch (e) {
+      console.error("Speicherfehler:", e);
+    }
   }
-}
 
-// Live-Daten abonnieren
-function subscribeToWineData() {
-  const ref = collection(db, "weine");
-  onSnapshot(ref, (snapshot) => {
-    const arr = [];
-    snapshot.forEach(docSnap => arr.push(docSnap.data()));
-    data = arr.length ? arr.map((w,i)=>({ _order:i, ...w })) : FULL_DATA;
-    render();
-  }, (err) => {
-    console.warn("Firestore-Live-Update fehlgeschlagen:", err);
-  });
-}
+  // Live-Daten abonnieren und STABIL mit Basisdaten mergen
+  function subscribeToWineData() {
+    const ref = collection(db, "weine");
+    onSnapshot(ref, (snapshot) => {
+      const map = new Map();
+      snapshot.forEach(docSnap => { map.set(docSnap.id, docSnap.data()); });
+
+      // Merge: Basisliste bleibt vollständig; Firestore-Felder überschreiben Basis
+      data = BASE_DATA.map(base => {
+        const live = map.get(base.château);
+        return {
+          ...base,
+          ...(live || {}),
+          jahrgang: (live && live.jahrgang != null ? live.jahrgang : (base.jahrgang ?? "")),
+          _order: (live && live._order != null ? live._order : base._order)
+        };
+      });
+
+      render();
+    }, (err) => {
+      console.warn("Firestore-Live-Update fehlgeschlagen:", err);
+      data = BASE_DATA;
+      render();
+    });
+  }
 
   // DOM Refs
   const elGrid        = document.getElementById("grid");
@@ -240,7 +259,7 @@ function subscribeToWineData() {
     const filtered = data
       .filter(w => klass==="Alle" || w.klassifikation===klass)
       .filter(w => !onlyTasted || hasValidDate(w.verkostetAm))
-      .filter(w => q ? (w.château+w.herkunftsgebiet+w.rebsorten).toLowerCase().includes(q) : true)
+      .filter(w => q ? (w.château+w.herkunftsgebiet+w.rebsorten+String(w.jahrgang||"")).toLowerCase().includes(q) : true)
       .slice().sort((a,b)=>(a._order??0)-(b._order??0));
 
     elGrid.innerHTML = "";
@@ -260,6 +279,30 @@ function subscribeToWineData() {
       const grapes = document.createElement("div"); grapes.className="small";
       grapes.innerHTML = "<strong>Rebsorten:</strong> " + w.rebsorten;
 
+      // Jahrgang
+      const rowVintage = document.createElement("div"); rowVintage.className="row";
+      const lblVintage = document.createElement("label"); lblVintage.textContent = "Jahrgang";
+      const inputVintage = document.createElement("input");
+      inputVintage.className = "input";
+      inputVintage.type = "number";
+      inputVintage.inputMode = "numeric";
+      inputVintage.min = "1900";
+      inputVintage.max = "2100";
+      inputVintage.placeholder = "z. B. 2016";
+      inputVintage.value = w.jahrgang || "";
+      inputVintage.addEventListener("change", async (e) => {
+        w.jahrgang = clampYear(e.target.value);
+        e.target.value = w.jahrgang;
+        await saveWineData(w);
+      });
+      inputVintage.addEventListener("blur", async (e) => {
+        w.jahrgang = clampYear(e.target.value);
+        e.target.value = w.jahrgang;
+        await saveWineData(w);
+      });
+      rowVintage.appendChild(lblVintage); rowVintage.appendChild(inputVintage);
+
+      // Datum
       const rowDate = document.createElement("div"); rowDate.className="row";
       const lblDate = document.createElement("label"); lblDate.textContent="Verkostet am";
       const inputDate = document.createElement("input"); inputDate.className="input"; inputDate.type="date";
@@ -267,21 +310,23 @@ function subscribeToWineData() {
       inputDate.addEventListener("change", async (e)=>{
         w.verkostetAm = e.target.value || "";
         await saveWineData(w);
-        render();
+        // sanft nur Status/Progress aktualisieren
+        updateStatus();
       });
       rowDate.appendChild(lblDate); rowDate.appendChild(inputDate);
 
+      // Scores
       const rowScore = document.createElement("div"); rowScore.className="row";
       const s1 = document.createElement("div"); s1.className="score";
       const l1 = document.createElement("label"); l1.textContent="Nils"; l1.style.width="60px";
       const i1 = document.createElement("input"); i1.type="number"; i1.min="0"; i1.max="100"; i1.placeholder="0–100"; i1.value=w.scoreNils||"";
-      i1.addEventListener("input", async (e)=>{ w.scoreNils=e.target.value; await saveWineData(w); updateStatus(); });
+      i1.addEventListener("change", async (e)=>{ w.scoreNils=clampScore(e.target.value); e.target.value=w.scoreNils; await saveWineData(w); updateStatus(); });
       i1.addEventListener("blur",  async (e)=>{ w.scoreNils=clampScore(e.target.value); e.target.value=w.scoreNils; await saveWineData(w); updateStatus(); });
 
       const s2 = document.createElement("div"); s2.className="score";
       const l2 = document.createElement("label"); l2.textContent="Chris"; l2.style.width="60px";
       const i2 = document.createElement("input"); i2.type="number"; i2.min="0"; i2.max="100"; i2.placeholder="0–100"; i2.value=w.scoreChris||"";
-      i2.addEventListener("input", async (e)=>{ w.scoreChris=e.target.value; await saveWineData(w); updateStatus(); });
+      i2.addEventListener("change", async (e)=>{ w.scoreChris=clampScore(e.target.value); e.target.value=w.scoreChris; await saveWineData(w); updateStatus(); });
       i2.addEventListener("blur",  async (e)=>{ w.scoreChris=clampScore(e.target.value); e.target.value=w.scoreChris; await saveWineData(w); updateStatus(); });
 
       s1.appendChild(l1); s1.appendChild(i1);
@@ -304,9 +349,11 @@ function subscribeToWineData() {
 
       status.appendChild(left); status.appendChild(right);
 
+      // Karte zusammenbauen
       card.appendChild(head);
       card.appendChild(loc);
       card.appendChild(grapes);
+      card.appendChild(rowVintage);
       card.appendChild(rowDate);
       card.appendChild(rowScore);
       card.appendChild(status);
@@ -317,17 +364,13 @@ function subscribeToWineData() {
   }
 
   // Events
-  document.getElementById("search").addEventListener("input", render);
-  document.getElementById("klass").addEventListener("change", render);
-  document.getElementById("onlyTasted").addEventListener("change", render);
+  elSearch.addEventListener("input", render);
+  elKlass.addEventListener("change", render);
+  elOnlyTasted.addEventListener("change", render);
 
   // Start
-subscribeToWineData();
-
-
-
+  subscribeToWineData();
 </script>
 
 </body>
 </html>
-
